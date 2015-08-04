@@ -3,6 +3,9 @@
 
 #include <QStringList>
 
+// headers from MeshProcToolkit
+#include "Filters.h"
+
 class MeshProcessor
 {
 public:
@@ -10,9 +13,15 @@ public:
     ~MeshProcessor();
 
     void setFilenames(QStringList f);
+    void loadFilesToMeshes(QStringList f);
+
+    std::vector<feMesh*> meshList;
 
 private:
     QStringList filenames;
+
+
+
 };
 
 #endif // MESHPROCESSOR_H
