@@ -2,27 +2,30 @@
 #define VIEWERWIDGET_H
 
 #include <QOpenGLWidget>
-#include <QOpenGLFunctions>
+#include <QFileDialog>
+
+#include "meshprocessor.h"
 
 namespace Ui {
-class viewerWidget;
+class ViewerWidget;
 }
 
-class viewerWidget : public QOpenGLWidget //, protected QOpenGLFunctions
+class ViewerWidget : public QOpenGLWidget
 {
     Q_OBJECT
 
 public:
-    viewerWidget(QWidget *parent = 0);
-    ~viewerWidget();
+    explicit ViewerWidget(QWidget *parent = 0);
+    ~ViewerWidget();
 
-protected:
-    void initializeGL() Q_DECL_OVERRIDE;
-    void resizeGL(int w, int h) Q_DECL_OVERRIDE;
-    void paintGL() Q_DECL_OVERRIDE;
+    void initializeGL();
+    void resizeGL(int w, int h);
+    void paintGL();
 
 private:
-    Ui::viewerWidget *ui;
+    Ui::ViewerWidget *ui;
+    QFileDialog fileGetter;
+    MeshProcessor meshProc;
 };
 
 #endif // VIEWERWIDGET_H
