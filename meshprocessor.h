@@ -5,6 +5,7 @@
 
 // headers from MeshProcToolkit
 #include "Filters.h"
+#include "cPoint.h"
 
 class MeshProcessor
 {
@@ -14,11 +15,14 @@ public:
 
     void setFilenames(QStringList f);
     void loadFilesToMeshes(QStringList f);
+    void findMeshesBoundary();
 
     std::vector<feMesh*> meshList;
+    cPoint cornerMin, cornerMax;
 
 private:
     QStringList filenames;
+
 
 
 
