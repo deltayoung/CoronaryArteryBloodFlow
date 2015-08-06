@@ -27,6 +27,8 @@ private:
     QFileDialog fileGetter;
     MeshProcessor meshProc;
     double left, right, top, bottom, nearVal, farVal;
+    GLfloat alpha;   // 1 = opaque, 0 = transparent
+    const GLfloat alpha_step;
 };
 
 #endif // VIEWERWIDGET_H
