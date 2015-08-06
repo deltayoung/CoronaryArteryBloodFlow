@@ -26,6 +26,7 @@ private:
     Ui::ViewerWidget *ui;
     QFileDialog fileGetter;
     MeshProcessor meshProc;
+    double left, right, top, bottom, nearVal, farVal;
 };
 
 #endif // VIEWERWIDGET_H

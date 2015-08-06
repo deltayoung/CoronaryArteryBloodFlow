@@ -38,15 +38,15 @@ void ViewerWidget::initializeGL()
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    /*float scalar = 1.2f * 0.5f;
-    glFrustum(  scalar*(meshProc.cornerMin.x-meshProc.cornerMax.x),       //left
-                scalar*(meshProc.cornerMax.x-meshProc.cornerMin.x),       //right
-                scalar*(meshProc.cornerMin.y-meshProc.cornerMax.y),       //bottom
-                scalar*(meshProc.cornerMax.y-meshProc.cornerMin.y),       //top
-                meshProc.cornerMax.z-meshProc.cornerMin.z,                //nearVal
-                3.0f*(meshProc.cornerMax.z-meshProc.cornerMin.z)      //farVal
-             );
-*/
+    float scalar = 1.2f * 0.5f;
+    left = scalar*(meshProc.cornerMin.x-meshProc.cornerMax.x);
+    right = scalar*(meshProc.cornerMax.x-meshProc.cornerMin.x);
+    bottom = scalar*(meshProc.cornerMin.y-meshProc.cornerMax.y);
+    top = scalar*(meshProc.cornerMax.y-meshProc.cornerMin.y);
+    nearVal = meshProc.cornerMax.z-meshProc.cornerMin.z;
+    farVal = 3.0f*(meshProc.cornerMax.z-meshProc.cornerMin.z;
+    glFrustum(left, right, bottom, top, nearVal, farVal);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -55,33 +55,25 @@ void ViewerWidget::initializeGL()
 void ViewerWidget::resizeGL(int w, int h)
 {
     float   origAspectRatio = (meshProc.cornerMax.x-meshProc.cornerMin.x)/(meshProc.cornerMax.y-meshProc.cornerMin.y),
-            newAspectRatio = (float)w/h,
-            newWidthScalar, newHeightScalar;
+            newAspectRatio = (float)w/h;
 
     if (newAspectRatio > origAspectRatio)
     {
         // expand left&right, retain height
-        newWidthScalar = newAspectRatio;
-        newHeightScalar = 1.0f;
+        left *= newAspectRatio;
+        right *= newAspectRatio;
     }
     else
     {
         // expand bottom&top, retain width
-        newWidthScalar = 1.0f;
-        newHeightScalar = 1.0f/newAspectRatio;
+        top /= newAspectRatio;
+        bottom /= newAspectRatio;
     }
 
-    //!! This part - try to make the frustum scale from the previous frustum rather than
-    //        from the absolute object boundary (to cater for changes that have happened the original object state)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    /*glFrustum(newWidthScalar*(meshProc.cornerMin.x-meshProc.cornerMax.x),       //left
-              newWidthScalar*(meshProc.cornerMax.x-meshProc.cornerMin.x),       //right
-              newHeightScalar*(meshProc.cornerMin.y-meshProc.cornerMax.y),       //bottom
-              newHeightScalar*(meshProc.cornerMax.y-meshProc.cornerMin.y),       //top
-              meshProc.cornerMax.z-meshProc.cornerMin.z,                //nearVal
-              3.0f*(meshProc.cornerMax.z-meshProc.cornerMin.z)      //farVal
-             );*/
+    glFrustum(left, right, bottom, top, nearVal, farVal);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
