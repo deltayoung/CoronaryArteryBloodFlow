@@ -9,11 +9,9 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
     ui(new Ui::ViewerWidget),
     fileGetter(parent),
-    alpha_step(0.001f)
+    alpha_step(-0.01f), alpha(1.0f)
 {
     ui->setupUi(this);
-
-    alpha = 0.0f;
 
     fileGetter.setDirectory(QDir::homePath());
     //fileGetter.setDirectory(QDir::currentPath());
@@ -35,7 +33,15 @@ void ViewerWidget::initializeGL()
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+
+    //###############
+    //If glFrustum/glOrtho is not used (i.e., the Z axis is not flipped), we have to change the display from left-handed system to right-handed system (i.e. Z- axis going into the screen),
+    //by either flipping the depth range from the default (0,1) to (1,0), or to change the depth function test from the default GL_LEQUAL to GL_GEQUAL
+    //glDepthRange(1.0f, 0.0f);
+    //glDepthFunc(GL_GEQUAL); glClearDepth(0.0f);
+    //###############
+
+    //Enabling transparency
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -64,15 +70,15 @@ void ViewerWidget::initializeGL()
                 top = right = depth;
         }
         left = bottom = -right;
-        nearVal = depth/scalar; // field of view = 90 degrees
+        nearVal = depth/scalar; // field of view = 45 degrees
         farVal = 2.0f*nearVal;
     }
     else
     {
         right = top = 1.0f;
         left = bottom = -1.0f;
-        nearVal = 1.0f;
-        farVal = 2.0f;
+        nearVal = 2.0f;
+        farVal = 4.0f;
     }
 
     glFrustum(left, right, bottom, top, nearVal, farVal);
@@ -84,21 +90,9 @@ void ViewerWidget::initializeGL()
 
 void ViewerWidget::resizeGL(int w, int h)
 {
-    float   origAspectRatio = (right-left)/(top-bottom),
-            newAspectRatio = (float)w/h;
-
-    if (newAspectRatio > origAspectRatio)
-    {
-        // expand left&right, retain height & depth
-        right = 0.5f*newAspectRatio*(top-bottom);
-        left = -right;
-    }
-    else
-    {
-        // expand top&bottom, retain width & depth
-        top = 0.5f*(right-left)/newAspectRatio;
-        bottom = -top;
-    }
+    // shrink/expand left&right, retain height & depth
+    right = 0.5f*w/h*(top-bottom);
+    left = -right;
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -117,53 +111,67 @@ void ViewerWidget::paintGL()
     if (meshProc.meshList.size()<1)
     {
         glBegin(GL_TRIANGLES);
-            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);  //red
-            glVertex3f(-1.0f, -1.0f, 1.2f);
-            glVertex3f(1.0f, -1.0f, 1.2f);
-            glVertex3f(0.0f, 1.0f, 1.2f);
+            //Warning: the objects should be rendered in order of back-to-front to achieve proper transparency effect!
+            glColor4f(0.0f, 0.0f, 1.0f, 1.0f);  //blue
+            glVertex3f(-1.0f, -1.0f, -3.5f);
+            glVertex3f(1.0f, -1.0f, -3.5f);
+            glVertex3f(0.0f, 1.0f, -3.5f);
 
-            glColor4f(0.0f, 1.0f, 0.0f, 1.0f);  //green
-            glVertex3f(-1.0f, -1.0f, 1.5f);
-            glVertex3f(1.0f, -1.0f, 1.5f);
-            glVertex3f(0.0f, 1.0f, 1.5f);
+            glColor4f(0.0f, 1.0f, 0.0f, alpha);  //green
+            glVertex3f(-1.0f, -1.0f, -2.5f);
+            glVertex3f(1.0f, -1.0f, -2.5f);
+            glVertex3f(0.0f, 1.0f, -3.5f);
 
-            glColor4f(1.0f, 1.0f, 0.0f, 1.0f);  //yellow
-            glVertex3f(-1.0f, -1.0f, 1.1f);
-            glVertex3f(1.0f, -1.0f, 1.1f);
-            glVertex3f(0.0f, 1.0f, 1.3f);
+            glColor4f(1.0f, 0.0f, 0.0f, alpha);  //red
+            glVertex3f(-1.0f, -1.0f, -3.0f);
+            glVertex3f(1.0f, -1.0f, -3.0f);
+            glVertex3f(0.0f, 1.0f, -3.0f);
         glEnd();
     }
-
-    glPushMatrix();
-
-    // move the object to a distance from the camera dynamically to put the object in the centre of the current frustum
-    glTranslatef(0.0f, 0.0f, -0.5f*(farVal+nearVal));
-
-    // reorient the object to see from its side assuming the default view is from the top
-    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-
-    // move the object to position its center to the origin
-    glTranslatef(-0.5f*(meshProc.cornerMin.x+meshProc.cornerMax.x),
-                 -0.5f*(meshProc.cornerMin.y+meshProc.cornerMax.y),
-                 -0.5f*(meshProc.cornerMin.z+meshProc.cornerMax.z));
-
-    for (int i=0; i<meshProc.meshList.size(); i++)
+    else
     {
-        feMesh* curMesh = meshProc.meshList[i];
-        for (int j=0; j<curMesh->FaceList.size(); j++)
-        {
-            feFace* curFace = curMesh->FaceList[j];
-            glBegin(GL_TRIANGLES);
-                glColor4f(1.0f, 0.0f, 0.0f, alpha);
-                glVertex3f(curFace->pNode[0]->xyz[0], curFace->pNode[0]->xyz[1], curFace->pNode[0]->xyz[2]);
-                glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
-                glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
-            glEnd();
-        }
-    }
-    alpha = (alpha==1.0f?0.0f:alpha+alpha_step);
+        glPushMatrix();
 
-    glPopMatrix();
+        // move the object to a distance from the camera dynamically to put the object in the centre of the current frustum
+        glTranslatef(0.0f, 0.0f, -0.5f*(farVal+nearVal));
+
+        // reorient the object to see from its side assuming the default view is from the top
+        glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+
+        // move the object to position its center to the origin
+        glTranslatef(-0.5f*(meshProc.cornerMin.x+meshProc.cornerMax.x),
+                     -0.5f*(meshProc.cornerMin.y+meshProc.cornerMax.y),
+                     -0.5f*(meshProc.cornerMin.z+meshProc.cornerMax.z));
+
+        //Warning: the objects should be rendered in order of back-to-front to achieve proper transparency effect!
+        //Make sure the meshes are ordered from the wall first, then the blood arteries!
+        GLfloat curColor[4] = {0.5f, 0.2f, 0.2f, 1.0f}; // wall color
+        for (int i=0; i<meshProc.meshList.size(); i++)
+        {
+            if (i > 0.5f*meshProc.meshList.size())
+            {
+                curColor[0] = 1.0f; curColor[3] = alpha;     // blood artery color
+            }
+
+            feMesh* curMesh = meshProc.meshList[i];
+            for (int j=0; j<curMesh->FaceList.size(); j++)
+            {
+                feFace* curFace = curMesh->FaceList[j];
+                glBegin(GL_TRIANGLES);
+                    glColor4fv(curColor);
+                    glVertex3f(curFace->pNode[0]->xyz[0], curFace->pNode[0]->xyz[1], curFace->pNode[0]->xyz[2]);
+                    glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
+                    glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
+                glEnd();
+            }
+        }
+
+        glPopMatrix();
+    }
+
+    if (alpha+alpha_step < 0.0f || alpha+alpha_step > 1.0f)
+        alpha_step = -alpha_step;   // reverse
+    alpha += alpha_step;
 }
 
 
