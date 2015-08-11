@@ -69,8 +69,8 @@ void ViewerWidget::initializeGL()
     {
         right = top = 1.0f;
         left = bottom = -1.0f;
-        nearVal = 0.0f;
-        farVal = 1.0f;
+        nearVal = 1.0f;
+        farVal = 2.0f;
     }
 
     glFrustum(left, right, bottom, top, nearVal, farVal);
@@ -87,31 +87,15 @@ void ViewerWidget::resizeGL(int w, int h)
 
     if (newAspectRatio > origAspectRatio)
     {
-        if (newAspectRatio < 1)
-        {
-            // shrink
-        }
-        else
-        {
-            // expand left&right, retain height & depth
-            right = 0.5f*newAspectRatio*(top-bottom);
-            left = -right;
-        }
-
+        // expand left&right, retain height & depth
+        right = 0.5f*newAspectRatio*(top-bottom);
+        left = -right;
     }
     else
     {
-        if (newAspectRatio < 1)
-        {
-
-        }
-        else
-        {
-            // expand top&bottom, retain width & depth
-            top = 0.5f*(right-left)/newAspectRatio;
-            bottom = -top;
-        }
-
+        // expand top&bottom, retain width & depth
+        top = 0.5f*(right-left)/newAspectRatio;
+        bottom = -top;
     }
 
     glMatrixMode(GL_PROJECTION);
@@ -132,19 +116,19 @@ void ViewerWidget::paintGL()
     {
         glBegin(GL_TRIANGLES);
             glColor4f(1.0f, 0.0f, 0.0f, 1.0f);  //red
-            glVertex3f(-1.0f, -1.0f, 0.2f);
-            glVertex3f(1.0f, -1.0f, 0.2f);
-            glVertex3f(0.0f, 1.0f, 0.2f);
+            glVertex3f(-1.0f, -1.0f, 1.2f);
+            glVertex3f(1.0f, -1.0f, 1.2f);
+            glVertex3f(0.0f, 1.0f, 1.2f);
 
             glColor4f(0.0f, 1.0f, 0.0f, 1.0f);  //green
-            glVertex3f(-1.0f, -1.0f, 0.5f);
-            glVertex3f(1.0f, -1.0f, 0.5f);
-            glVertex3f(0.0f, 1.0f, 0.5f);
+            glVertex3f(-1.0f, -1.0f, 1.5f);
+            glVertex3f(1.0f, -1.0f, 1.5f);
+            glVertex3f(0.0f, 1.0f, 1.5f);
 
             glColor4f(1.0f, 1.0f, 0.0f, 1.0f);  //yellow
-            glVertex3f(-1.0f, -1.0f, 0.1f);
-            glVertex3f(1.0f, -1.0f, 0.1f);
-            glVertex3f(0.0f, 1.0f, 0.3f);
+            glVertex3f(-1.0f, -1.0f, 1.1f);
+            glVertex3f(1.0f, -1.0f, 1.1f);
+            glVertex3f(0.0f, 1.0f, 1.3f);
         glEnd();
     }
 
