@@ -24,7 +24,8 @@ public:
 private:
     QStringList filenames;
 
-    int recursiveTraverse(feFace*, int);
+    int depthFirstTraverse(feFace*, int);
+    int breadthFirstTraverse(feFace*);
     bool foundNewSeed(int &);
 
 };

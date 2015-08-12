@@ -22,6 +22,9 @@ public:
     void resizeGL(int w, int h);
     void paintGL();
 
+    void showNextFrame();
+    void showPrevFrame();
+
 private:
     Ui::ViewerWidget *ui;
     QFileDialog fileGetter;
@@ -30,6 +33,9 @@ private:
     GLfloat alpha;   // 1 = opaque, 0 = transparent
     GLfloat alpha_step;
     GLint frame;    // start from 0
+
+protected:
+    void keyPressEvent(QKeyEvent*);
 };
 
 #endif // VIEWERWIDGET_H

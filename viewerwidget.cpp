@@ -1,9 +1,11 @@
 #include "viewerwidget.h"
 #include "ui_viewerwidget.h"
 
-#ifdef _MSC_VISUAL_STUDIO
-    #pragma warning(disable:4018)
-#endif
+#include <QKeyEvent>
+
+//#ifdef _MSC_VISUAL_STUDIO
+//   #pragma warning(disable:4018)
+//#endif
 
 ViewerWidget::ViewerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -24,6 +26,9 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
         meshProc.traversePolygonsOntoMeshes();
     }
 
+    setFocusPolicy(Qt::StrongFocus);
+    setFocus();
+    grabKeyboard();
 }
 
 ViewerWidget::~ViewerWidget()
@@ -48,6 +53,8 @@ void ViewerWidget::initializeGL()
     //Enabling transparency
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);       //black background
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -109,7 +116,6 @@ void ViewerWidget::resizeGL(int w, int h)
 void ViewerWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.0, 0.0, 0.0, 1.0);       //black
 
     //test
     if (meshProc.meshList.size()<1)
@@ -168,10 +174,34 @@ void ViewerWidget::paintGL()
                 glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
             glEnd();
         }
-        frame = (frame+1)==meshProc.meshList.size()? 0 : (frame+1);
 
         glPopMatrix();
     }
 }
 
+void ViewerWidget::showNextFrame()
+{
+    frame = (frame+1)==meshProc.meshList.size()? 0 : (frame+1);
+    update();
+}
+
+void ViewerWidget::showPrevFrame()
+{
+    frame = (frame==0) ? (meshProc.meshList.size()-1) : (frame-1);
+    update();
+}
+
+void ViewerWidget::keyPressEvent(QKeyEvent* event)
+{
+    switch(event->key())
+    {
+        case Qt::Key_Right:
+            showNextFrame();
+            break;
+        case Qt::Key_Left:
+            showPrevFrame();
+            break;
+
+    }
+}
 
