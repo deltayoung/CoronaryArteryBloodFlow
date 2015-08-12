@@ -9,7 +9,8 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
     ui(new Ui::ViewerWidget),
     fileGetter(parent),
-    alpha_step(-0.01f), alpha(1.0f)
+    alpha_step(-0.01f), alpha(1.0f),
+    frame(0)
 {
     ui->setupUi(this);
 
@@ -18,7 +19,10 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     fileGetter.setFileMode(QFileDialog::ExistingFiles); // to select all the input files at one go
     fileGetter.setNameFilter("*.vtk");
     if (fileGetter.exec())
+    {
         meshProc.loadFilesToMeshes(fileGetter.selectedFiles());
+        meshProc.traversePolygonsOntoMeshes();
+    }
 
 }
 
@@ -126,7 +130,12 @@ void ViewerWidget::paintGL()
             glVertex3f(-1.0f, -1.0f, -3.0f);
             glVertex3f(1.0f, -1.0f, -3.0f);
             glVertex3f(0.0f, 1.0f, -3.0f);
+
         glEnd();
+
+        if (alpha+alpha_step < 0.0f || alpha+alpha_step > 1.0f)
+            alpha_step = -alpha_step;   // reverse
+        alpha += alpha_step;
     }
     else
     {
@@ -145,33 +154,24 @@ void ViewerWidget::paintGL()
 
         //Warning: the objects should be rendered in order of back-to-front to achieve proper transparency effect!
         //Make sure the meshes are ordered from the wall first, then the blood arteries!
-        GLfloat curColor[4] = {0.5f, 0.2f, 0.2f, 1.0f}; // wall color
-        for (int i=0; i<meshProc.meshList.size(); i++)
-        {
-            if (i > 0.5f*meshProc.meshList.size())
-            {
-                curColor[0] = 1.0f; curColor[3] = alpha;     // blood artery color
-            }
+        //GLfloat curColor[4] = {0.5f, 0.2f, 0.2f, 1.0f}; // wall color
 
-            feMesh* curMesh = meshProc.meshList[i];
-            for (int j=0; j<curMesh->FaceList.size(); j++)
-            {
-                feFace* curFace = curMesh->FaceList[j];
-                glBegin(GL_TRIANGLES);
-                    glColor4fv(curColor);
-                    glVertex3f(curFace->pNode[0]->xyz[0], curFace->pNode[0]->xyz[1], curFace->pNode[0]->xyz[2]);
-                    glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
-                    glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
-                glEnd();
-            }
+        feMesh* curMesh = meshProc.meshList[frame];
+        for (int j=0; j<curMesh->FaceList.size(); j++)
+        {
+            feFace* curFace = curMesh->FaceList[j];
+            glBegin(GL_TRIANGLES);
+                //glColor4fv(curColor);
+                glColor4f(1.0f, 0.0f, 0.0f, curFace->scalarAttrib);
+                glVertex3f(curFace->pNode[0]->xyz[0], curFace->pNode[0]->xyz[1], curFace->pNode[0]->xyz[2]);
+                glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
+                glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
+            glEnd();
         }
+        frame = (frame+1)==meshProc.meshList.size()? 0 : (frame+1);
 
         glPopMatrix();
     }
-
-    if (alpha+alpha_step < 0.0f || alpha+alpha_step > 1.0f)
-        alpha_step = -alpha_step;   // reverse
-    alpha += alpha_step;
 }
 
 

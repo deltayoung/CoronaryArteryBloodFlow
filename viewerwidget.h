@@ -29,6 +29,7 @@ private:
     double left, right, top, bottom, nearVal, farVal;
     GLfloat alpha;   // 1 = opaque, 0 = transparent
     GLfloat alpha_step;
+    GLint frame;    // start from 0
 };
 
 #endif // VIEWERWIDGET_H

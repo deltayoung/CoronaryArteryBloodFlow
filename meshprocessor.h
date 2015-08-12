@@ -16,6 +16,7 @@ public:
     void setFilenames(QStringList f);
     void loadFilesToMeshes(QStringList f);
     void findMeshesBoundary();
+    void traversePolygonsOntoMeshes();
 
     std::vector<feMesh*> meshList;
     cPoint cornerMin, cornerMax;
@@ -23,8 +24,8 @@ public:
 private:
     QStringList filenames;
 
-
-
+    int recursiveTraverse(feFace*, int);
+    bool foundNewSeed(int &);
 
 };
 
