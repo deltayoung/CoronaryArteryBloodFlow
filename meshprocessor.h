@@ -13,21 +13,22 @@ public:
     MeshProcessor();
     ~MeshProcessor();
 
-    void setFilenames(QStringList f);
+    //void setFilenames(QStringList f);
     void loadFilesToMeshes(QStringList f);
     void findMeshesBoundary();
-    void traversePolygonsOntoMeshes();
+    void traversePolygonsOntoMeshesAllObjects();
 
-    std::vector<feMesh*> meshList;
-    //std::vector<vector<feMesh*>> secondaryMeshLists; // allow multiple objects if there are more than 1
+    vector<feMesh*> meshList;
+    vector<vector<feMesh*>> secondaryMeshLists; // allow multiple objects if there are more than 1
     cPoint cornerMin, cornerMax;
 
 private:
-    QStringList filenames;
+    //QStringList filenames;
 
     int depthFirstTraverse(feFace*, int);
     int breadthFirstTraverse(feFace*);
-    bool foundNewSeed(int &);
+    bool foundNewSeed(int &, vector<feMesh*>);
+    void traversePolygonsOntoMeshes(vector<feMesh*>);
 
 };
 

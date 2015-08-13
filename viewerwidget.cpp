@@ -16,6 +16,7 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    fileGetter.setWindowTitle("Open Main Object File");
     fileGetter.setDirectory(QDir::homePath());
     //fileGetter.setDirectory(QDir::currentPath());
     fileGetter.setFileMode(QFileDialog::ExistingFiles); // to select all the input files at one go
@@ -23,7 +24,27 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     if (fileGetter.exec())
     {
         meshProc.loadFilesToMeshes(fileGetter.selectedFiles());
-        meshProc.traversePolygonsOntoMeshes();
+
+        while (true)
+        {
+            QFileDialog nextFileGetter(parent);
+            nextFileGetter.setWindowTitle("Open Next Background Object File");
+            nextFileGetter.setDirectory(QDir::homePath());
+            //nextFileGetter.setDirectory(QDir::currentPath());
+            nextFileGetter.setFileMode(QFileDialog::ExistingFiles); // to select all the input files at one go
+            nextFileGetter.setNameFilter("*.vtk");
+            if (nextFileGetter.exec())
+            {
+                meshProc.loadFilesToMeshes(nextFileGetter.selectedFiles());
+            }
+            else
+                break;
+        }
+
+        //cout << "Establishing scene boundaries ...\n";
+        meshProc.findMeshesBoundary();
+        //cout << "Traversing meshes ...\n";
+        meshProc.traversePolygonsOntoMeshesAllObjects();  // traverse all meshes of all objects
     }
 
     setFocusPolicy(Qt::StrongFocus);
@@ -174,6 +195,21 @@ void ViewerWidget::paintGL()
                 glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
                 glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
             glEnd();
+        }
+        for (int i=0; i<meshProc.secondaryMeshLists.size(); i++)
+        {
+            curMesh = meshProc.secondaryMeshLists[i][frame];
+             for (int j=0; j<curMesh->FaceList.size(); j++)
+             {
+                 feFace* curFace = curMesh->FaceList[j];
+                 glBegin(GL_TRIANGLES);
+                     //glColor4fv(curColor);
+                     glColor4f(0.8f, 0.2f, 0.2f, reverse?curFace->scalarAttrib:(1-curFace->scalarAttrib));
+                     glVertex3f(curFace->pNode[0]->xyz[0], curFace->pNode[0]->xyz[1], curFace->pNode[0]->xyz[2]);
+                     glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
+                     glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
+                 glEnd();
+             }
         }
 
         glPopMatrix();
