@@ -84,7 +84,7 @@ void MeshProcessor::traversePolygonsOntoMeshes()
             continue;
         }
 
-        float trailFactor = 0.3f, trail, full, minVal = 0.2f, maxVal = 1.0f;
+        float trailFactor = 0.3f, trail, head, minVal = 0.2f, maxVal = 1.0f, avgVal = 0.8f;
         for (int faceIndex=0; faceIndex<meshList[0]->FaceList.size(); faceIndex++)
         {
             if (meshList[0]->FaceList[faceIndex]->state == 1)    // traversed faces only
@@ -93,24 +93,24 @@ void MeshProcessor::traversePolygonsOntoMeshes()
                 float curLevel = meshList[0]->FaceList[faceIndex]->scalarAttrib/levelCount;
                 for (int curFrame=0; curFrame<=halfSize; curFrame++)
                 {   
-                    trail = (float)curFrame/halfSize;
-                    full = (1.0f-trailFactor)*trail;
+                    head = (float)curFrame/halfSize;
+                    trail = (1.0f+trailFactor)*head;
 
-                    if (curLevel <= full)   // clamp
-                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = maxVal;
-                    else if (curLevel > full && curLevel < trail)      // trail
-                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = maxVal-curLevel*(maxVal-minVal);
+                    if (curLevel <= head)   // flow front
+                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = avgVal+(curLevel/head)*(maxVal-avgVal);
+                    else if (curLevel > head && curLevel < trail)      // trail
+                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = maxVal-(curLevel-head)/(trail-head)*(maxVal-minVal);
                     else    // clamp
                         meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = minVal;
                 }
                 for (int curFrame=halfSize+1; curFrame<meshList.size(); curFrame++)
                 {
-                    trail = 2.0f-2.0f*curFrame/meshList.size();  // range [1, 0]
-                    full = (1.0f-trailFactor)*trail;             // range [0.x, 0]
-                    if (curLevel <= full)     // clamp
-                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = maxVal;
-                    else if (curLevel > full && curLevel < trail)  // trail
-                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = maxVal-curLevel*(maxVal-minVal);
+                    head = 2.0f-2.0f*curFrame/meshList.size();
+                    trail = (1.0f+trailFactor)*head;
+                    if (curLevel <= head)     // clamp
+                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = avgVal+(curLevel/head)*(maxVal-avgVal);
+                    else if (curLevel > head && curLevel < trail)  // trail
+                        meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = maxVal-(curLevel-head)/(trail-head)*(maxVal-minVal);
                     else    // clamp
                         meshList[curFrame]->FaceList[faceIndex]->scalarAttrib = minVal;
                 }

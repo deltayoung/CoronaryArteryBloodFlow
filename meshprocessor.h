@@ -19,6 +19,7 @@ public:
     void traversePolygonsOntoMeshes();
 
     std::vector<feMesh*> meshList;
+    //std::vector<vector<feMesh*>> secondaryMeshLists; // allow multiple objects if there are more than 1
     cPoint cornerMin, cornerMax;
 
 private:

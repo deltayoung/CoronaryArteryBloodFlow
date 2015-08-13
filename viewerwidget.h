@@ -24,6 +24,7 @@ public:
 
     void showNextFrame();
     void showPrevFrame();
+    void reverseFlowDirection();
 
 private:
     Ui::ViewerWidget *ui;
@@ -33,6 +34,7 @@ private:
     GLfloat alpha;   // 1 = opaque, 0 = transparent
     GLfloat alpha_step;
     GLint frame;    // start from 0
+    bool reverse;
 
 protected:
     void keyPressEvent(QKeyEvent*);

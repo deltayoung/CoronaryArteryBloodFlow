@@ -12,7 +12,7 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     ui(new Ui::ViewerWidget),
     fileGetter(parent),
     alpha_step(-0.01f), alpha(1.0f),
-    frame(0)
+    frame(0), reverse(false)
 {
     ui->setupUi(this);
 
@@ -168,7 +168,8 @@ void ViewerWidget::paintGL()
             feFace* curFace = curMesh->FaceList[j];
             glBegin(GL_TRIANGLES);
                 //glColor4fv(curColor);
-                glColor4f(1.0f, 0.0f, 0.0f, curFace->scalarAttrib);
+
+                glColor4f(1.0f, 0.0f, 0.0f, reverse?(1-curFace->scalarAttrib):curFace->scalarAttrib);
                 glVertex3f(curFace->pNode[0]->xyz[0], curFace->pNode[0]->xyz[1], curFace->pNode[0]->xyz[2]);
                 glVertex3f(curFace->pNode[1]->xyz[0], curFace->pNode[1]->xyz[1], curFace->pNode[1]->xyz[2]);
                 glVertex3f(curFace->pNode[2]->xyz[0], curFace->pNode[2]->xyz[1], curFace->pNode[2]->xyz[2]);
@@ -191,6 +192,11 @@ void ViewerWidget::showPrevFrame()
     update();
 }
 
+void ViewerWidget::reverseFlowDirection()
+{
+    reverse = !reverse;
+}
+
 void ViewerWidget::keyPressEvent(QKeyEvent* event)
 {
     switch(event->key())
@@ -200,6 +206,9 @@ void ViewerWidget::keyPressEvent(QKeyEvent* event)
             break;
         case Qt::Key_Left:
             showPrevFrame();
+            break;
+        case Qt::Key_R:
+            reverseFlowDirection();
             break;
 
     }
