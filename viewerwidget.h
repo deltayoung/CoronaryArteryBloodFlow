@@ -25,6 +25,7 @@ private:
     QPoint startPos;
     bool zoomMode;
     float zoomIn, overZoom;
+    bool animationToggle;
 
     MeshProcessor meshProc;
     float fovFactor;  // tan(0.5*field of view), where field of view is the angle from top to bottom
@@ -38,6 +39,7 @@ private:
     void showNextFrame();
     void showPrevFrame();
     void reverseFlowDirection();
+    void toggleAnimation();
 
     void zoom(QPoint);
 

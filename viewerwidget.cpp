@@ -147,20 +147,6 @@ void ViewerWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (zoomMode)
-    {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glFrustum(left, right, bottom, top, nearVal, farVal);
-
-        glMatrixMode(GL_MODELVIEW);
-
-        //cout << "DebugPt, zoomMode: [L,R,B,T,N,F]=[" << left << "," << right << "," << bottom << "," << top << "," << nearVal << "," << farVal << "]\n";
-    }
-    //else
-    //    cout << "DebugPt, !zoomMode: [L,R,B,T,N,F]=[" << left << "," << right << "," << bottom << "," << top << "," << nearVal << "," << farVal << "]\n";
-
-
     //test
     if (meshProc.meshList.size()<1)
     {
@@ -183,12 +169,22 @@ void ViewerWidget::paintGL()
 
         glEnd();
 
+        // change transparency at the next paint
         if (alpha+alpha_step < 0.0f || alpha+alpha_step > 1.0f)
             alpha_step = -alpha_step;   // reverse
         alpha += alpha_step;
     }
     else
     {
+        if (zoomMode)
+        {
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            glFrustum(left, right, bottom, top, nearVal, farVal);
+
+            glMatrixMode(GL_MODELVIEW);
+        }
+
         glPushMatrix();
 
         // move the object to a distance from the camera dynamically to put the object in the centre of the current frustum
