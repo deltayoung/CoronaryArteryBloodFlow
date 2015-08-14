@@ -44,13 +44,9 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
                 break;
         }
 
-        //cout << "Establishing scene boundaries ...\n";
         meshProc.findMeshesBoundary();
         initSceneDistance = (1+fovFactor)/fovFactor*0.5*meshProc.maxLength;
-        //cout << "Traversing meshes ...\n";
         meshProc.traversePolygonsOntoMeshesAllObjects();  // traverse all meshes of all objects
-
-
     }
 
     setFocusPolicy(Qt::StrongFocus);    // enable processing keyboard's key event
@@ -112,7 +108,6 @@ void ViewerWidget::initializeGL()
 
         left = bottom = -right;
         nearVal = top/fovFactor;
-        cout << "DebugPt: top=" << top << ", nearVal=" << nearVal << "\n";
         farVal = nearVal+meshProc.maxLength;
     }
     else
@@ -317,7 +312,6 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent* event)
 void ViewerWidget::zoom(QPoint curPos)
 {
     float zoomFactor = (float)(curPos.y()-startPos.y()) / QWidget::height(); // + zoom in, - zoom out
-    //cout << "DebugPt: curPos.y()=" << curPos.y() << ", startPos.y()=" << startPos.y() << "\n";
 
     float origDepth = farVal-nearVal;
     float zoomAmt = zoomFactor*farVal; //zoomFactor*origDepth;   //zoomFactor*nearVal;
@@ -325,7 +319,6 @@ void ViewerWidget::zoom(QPoint curPos)
     if (nearVal-zoomAmt >= 1.0f && overZoom <= 0.0f)
     {
         nearVal = nearVal - zoomAmt - overZoom;
-        cout << "After zoom: nearVal=" << nearVal << "\n";
         overZoom = 0.0f;
         farVal = nearVal+origDepth;
         float newTop = nearVal*fovFactor; // change the frustum while retaining field of view
@@ -335,10 +328,7 @@ void ViewerWidget::zoom(QPoint curPos)
         bottom = -top;
     }
     else
-    {
-        cout << "overZoom=" << overZoom << "\n";
         overZoom += zoomAmt;
-    }
 
     update();
 }
@@ -346,7 +336,6 @@ void ViewerWidget::zoom(QPoint curPos)
 void ViewerWidget::moveTo(QPoint curPos)
 {
     QPoint moveFactor = (curPos-startPos); // + move to right/bottom, - move to left/top
-    cout << "DebugPt: curPos=(" << curPos.x() << "," << curPos.y() << "), startPos=(" << startPos.x() << "," << startPos.y() << "), moveFactor=" << moveFactor.x() << ", " << moveFactor.y() << "\n";
 
     float overZoomFactor = max(1.0f, 1.0f+overZoom/(float)nearVal);
     moveX += overZoomFactor*((right-left) * moveFactor.x() / QWidget::width());
