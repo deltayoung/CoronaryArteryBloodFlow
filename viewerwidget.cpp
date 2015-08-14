@@ -12,6 +12,7 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     ui(new Ui::ViewerWidget),
     fileGetter(parent),
     zoomMode(false), zoomIn(0.0f), overZoom(0.0f),
+    moveMode(false), moveX(0.0f), moveY(0.0f),
     fovFactor(0.5f),    // fovFactor=1 for 90-degree FOV (tan(90/2)=1); smaller fovFactor for smaller FOV
     alpha_step(-0.01f), alpha(1.0f),
     frame(0), reverse(false)
@@ -188,7 +189,7 @@ void ViewerWidget::paintGL()
         glPushMatrix();
 
         // move the object to a distance from the camera dynamically to put the object in the centre of the current frustum
-        glTranslatef(0.0f, 0.0f, zoomIn-initSceneDistance);
+        glTranslatef(moveX, moveY, zoomIn-initSceneDistance);
         //glTranslatef(0.0f, 0.0f, -initSceneDistance);
 
         // reorient the object to see from its side assuming the default view is from the top
@@ -278,6 +279,11 @@ void ViewerWidget::mousePressEvent(QMouseEvent* event)
         startPos = event->pos();
         zoomMode = true;
     }
+    else if (event->button() == Qt::LeftButton)
+    {
+        startPos = event->pos();
+        moveMode = true;
+    }
 }
 
 void ViewerWidget::mouseMoveEvent(QMouseEvent* event)
@@ -285,6 +291,11 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent* event)
     if (event->buttons() && Qt::RightButton && zoomMode)
     {
         zoom(event->pos());
+        startPos = event->pos();
+    }
+    else if (event->buttons() && Qt::LeftButton && moveMode)
+    {
+        moveTo(event->pos());
         startPos = event->pos();
     }
 }
@@ -296,6 +307,11 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent* event)
         zoom(event->pos());
         zoomMode = false;
     }
+    else if (event->button() == Qt::LeftButton && moveMode)
+    {
+        moveTo(event->pos());
+        moveMode = false;
+    }
 }
 
 void ViewerWidget::zoom(QPoint curPos)
@@ -306,7 +322,7 @@ void ViewerWidget::zoom(QPoint curPos)
     float origDepth = farVal-nearVal;
     float zoomAmt = zoomFactor*farVal; //zoomFactor*origDepth;   //zoomFactor*nearVal;
     zoomIn += zoomAmt;
-    if (nearVal-zoomAmt >= 0.1f*nearVal && overZoom <= 0.0f)
+    if (nearVal-zoomAmt >= 1.0f && overZoom <= 0.0f)
     {
         nearVal = nearVal - zoomAmt - overZoom;
         cout << "After zoom: nearVal=" << nearVal << "\n";
@@ -324,7 +340,17 @@ void ViewerWidget::zoom(QPoint curPos)
         overZoom += zoomAmt;
     }
 
-
     update();
 }
 
+void ViewerWidget::moveTo(QPoint curPos)
+{
+    QPoint moveFactor = (curPos-startPos); // + move to right/bottom, - move to left/top
+    cout << "DebugPt: curPos=(" << curPos.x() << "," << curPos.y() << "), startPos=(" << startPos.x() << "," << startPos.y() << "), moveFactor=" << moveFactor.x() << ", " << moveFactor.y() << "\n";
+
+    float overZoomFactor = max(1.0f, 1.0f+overZoom/(float)nearVal);
+    moveX += overZoomFactor*((right-left) * moveFactor.x() / QWidget::width());
+    moveY -= overZoomFactor*((top-bottom) * moveFactor.y() / QWidget::height());
+
+    update();
+}

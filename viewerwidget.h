@@ -23,8 +23,9 @@ private:
     QFileDialog fileGetter;
 
     QPoint startPos;
-    bool zoomMode;
-    float zoomIn, overZoom;
+    bool zoomMode, moveMode;
+    float   zoomIn, overZoom,
+            moveX, moveY;
 
     MeshProcessor meshProc;
     float fovFactor;  // tan(0.5*field of view), where field of view is the angle from top to bottom
@@ -40,6 +41,7 @@ private:
     void reverseFlowDirection();
 
     void zoom(QPoint);
+    void moveTo(QPoint);
 
 protected:
     void initializeGL() Q_DECL_OVERRIDE;
