@@ -11,6 +11,8 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
     ui(new Ui::ViewerWidget),
     fileGetter(parent),
+    zoomMode(false), zoomIn(0.0f), overZoom(0.0f),
+    fovFactor(0.5f),    // fovFactor=1 for 90-degree FOV (tan(90/2)=1); smaller fovFactor for smaller FOV
     alpha_step(-0.01f), alpha(1.0f),
     frame(0), reverse(false)
 {
@@ -43,13 +45,14 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
 
         //cout << "Establishing scene boundaries ...\n";
         meshProc.findMeshesBoundary();
+        initSceneDistance = (1+fovFactor)/fovFactor*0.5*meshProc.maxLength;
         //cout << "Traversing meshes ...\n";
         meshProc.traversePolygonsOntoMeshesAllObjects();  // traverse all meshes of all objects
+
+
     }
 
-    setFocusPolicy(Qt::StrongFocus);
-    setFocus();
-    grabKeyboard();
+    setFocusPolicy(Qt::StrongFocus);    // enable processing keyboard's key event
 }
 
 ViewerWidget::~ViewerWidget()
@@ -82,11 +85,12 @@ void ViewerWidget::initializeGL()
 
     if (meshProc.meshList.size()>0)
     {
-        float scalar = 1.0f * 0.5f;
+        float scalar = 1.0f * 0.5f, depth;
+
+        /*//set the frustum size to the largest dimension
         right = scalar*(meshProc.cornerMax.x-meshProc.cornerMin.x);
         top = scalar*(meshProc.cornerMax.y-meshProc.cornerMin.y);
-        float depth = scalar*(meshProc.cornerMax.z-meshProc.cornerMin.z);
-        //set the frustum size to the largest dimension
+        depth = scalar*(meshProc.cornerMax.z-meshProc.cornerMin.z);
         if (right>top)
         {
             if (right>depth)
@@ -100,10 +104,15 @@ void ViewerWidget::initializeGL()
                 right = depth = top;
             else
                 top = right = depth;
-        }
+        }*/
+
+        //set the frustum size to main object's maxLength
+        right = top = depth = scalar*meshProc.maxLength;
+
         left = bottom = -right;
-        nearVal = depth/scalar; // field of view = 45 degrees
-        farVal = 2.0f*nearVal;
+        nearVal = top/fovFactor;
+        cout << "DebugPt: top=" << top << ", nearVal=" << nearVal << "\n";
+        farVal = nearVal+meshProc.maxLength;
     }
     else
     {
@@ -138,6 +147,20 @@ void ViewerWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    if (zoomMode)
+    {
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glFrustum(left, right, bottom, top, nearVal, farVal);
+
+        glMatrixMode(GL_MODELVIEW);
+
+        //cout << "DebugPt, zoomMode: [L,R,B,T,N,F]=[" << left << "," << right << "," << bottom << "," << top << "," << nearVal << "," << farVal << "]\n";
+    }
+    //else
+    //    cout << "DebugPt, !zoomMode: [L,R,B,T,N,F]=[" << left << "," << right << "," << bottom << "," << top << "," << nearVal << "," << farVal << "]\n";
+
+
     //test
     if (meshProc.meshList.size()<1)
     {
@@ -169,7 +192,8 @@ void ViewerWidget::paintGL()
         glPushMatrix();
 
         // move the object to a distance from the camera dynamically to put the object in the centre of the current frustum
-        glTranslatef(0.0f, 0.0f, -0.5f*(farVal+nearVal));
+        glTranslatef(0.0f, 0.0f, zoomIn-initSceneDistance);
+        //glTranslatef(0.0f, 0.0f, -initSceneDistance);
 
         // reorient the object to see from its side assuming the default view is from the top
         glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
@@ -231,6 +255,7 @@ void ViewerWidget::showPrevFrame()
 void ViewerWidget::reverseFlowDirection()
 {
     reverse = !reverse;
+    update();
 }
 
 void ViewerWidget::keyPressEvent(QKeyEvent* event)
@@ -248,5 +273,62 @@ void ViewerWidget::keyPressEvent(QKeyEvent* event)
             break;
 
     }
+}
+
+void ViewerWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::RightButton)
+    {
+        startPos = event->pos();
+        zoomMode = true;
+    }
+}
+
+void ViewerWidget::mouseMoveEvent(QMouseEvent* event)
+{
+    if (event->buttons() && Qt::RightButton && zoomMode)
+    {
+        zoom(event->pos());
+        startPos = event->pos();
+    }
+}
+
+void ViewerWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::RightButton && zoomMode)
+    {
+        zoom(event->pos());
+        zoomMode = false;
+    }
+}
+
+void ViewerWidget::zoom(QPoint curPos)
+{
+    float zoomFactor = (float)(curPos.y()-startPos.y()) / QWidget::height(); // + zoom in, - zoom out
+    //cout << "DebugPt: curPos.y()=" << curPos.y() << ", startPos.y()=" << startPos.y() << "\n";
+
+    float origDepth = farVal-nearVal;
+    float zoomAmt = zoomFactor*farVal; //zoomFactor*origDepth;   //zoomFactor*nearVal;
+    zoomIn += zoomAmt;
+    if (nearVal-zoomAmt >= 0.1f*nearVal && overZoom <= 0.0f)
+    {
+        nearVal = nearVal - zoomAmt - overZoom;
+        cout << "After zoom: nearVal=" << nearVal << "\n";
+        overZoom = 0.0f;
+        farVal = nearVal+origDepth;
+        float newTop = nearVal*fovFactor; // change the frustum while retaining field of view
+        right *= newTop/top;
+        top = newTop;
+        left = -right;
+        bottom = -top;
+    }
+    else
+    {
+        cout << "overZoom=" << overZoom << "\n";
+        overZoom += zoomAmt;
+    }
+
+
+    update();
 }
 

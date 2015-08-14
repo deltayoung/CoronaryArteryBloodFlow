@@ -21,6 +21,7 @@ public:
     vector<feMesh*> meshList;
     vector<vector<feMesh*>> secondaryMeshLists; // allow multiple objects if there are more than 1
     cPoint cornerMin, cornerMax;
+    float maxLength; // maxLength is the longest length of the main object
 
 private:
     //QStringList filenames;

@@ -91,6 +91,9 @@ void MeshProcessor::findMeshesBoundary()
                     cornerMax.z = secondaryMeshLists[n][i]->NodeList[j]->xyz[2];
             }
     }*/
+
+    cVector maxLengthVector = cornerMax - cornerMin;
+    maxLength = maxLengthVector.length();
 }
 
 void MeshProcessor::traversePolygonsOntoMeshesAllObjects()
