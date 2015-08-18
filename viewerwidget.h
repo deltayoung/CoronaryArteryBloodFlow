@@ -3,6 +3,7 @@
 
 #include <QOpenGLWidget>
 #include <QFileDialog>
+#include <QQuaternion>
 
 #include "meshprocessor.h"
 
@@ -22,10 +23,12 @@ private:
     Ui::ViewerWidget *ui;
     QFileDialog fileGetter;
 
-    QPoint startPos;
-    bool zoomMode, moveMode;
-    float   zoomIn, overZoom,
-            moveX, moveY;
+    QPoint      startPos;
+    bool        rotateMode, zoomMode, moveMode;
+    QQuaternion quaternion;
+    float       rotAngle, rotX, rotY, rotZ,
+                zoomIn, overZoom,
+                moveX, moveY;
 
     MeshProcessor meshProc;
     float fovFactor;  // tan(0.5*field of view), where field of view is the angle from top to bottom
@@ -40,6 +43,7 @@ private:
     void showPrevFrame();
     void reverseFlowDirection();
 
+    void rotate(QPoint);
     void zoom(QPoint);
     void moveTo(QPoint);
 

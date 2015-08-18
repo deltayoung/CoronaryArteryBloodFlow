@@ -11,6 +11,7 @@ ViewerWidget::ViewerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
     ui(new Ui::ViewerWidget),
     fileGetter(parent),
+    rotateMode(false), rotAngle(0.0f), rotX(0.0f), rotY(1.0f), rotZ(0.0f),
     zoomMode(false), zoomIn(0.0f), overZoom(0.0f),
     moveMode(false), moveX(0.0f), moveY(0.0f),
     fovFactor(0.5f),    // fovFactor=1 for 90-degree FOV (tan(90/2)=1); smaller fovFactor for smaller FOV
@@ -189,6 +190,7 @@ void ViewerWidget::paintGL()
 
         // reorient the object to see from its side assuming the default view is from the top
         glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+        glRotatef(rotAngle, rotX, rotY, rotZ);  // rotation by the left click
 
         // move the object to position its center to the origin
         glTranslatef(-0.5f*(meshProc.cornerMin.x+meshProc.cornerMax.x),
@@ -269,12 +271,17 @@ void ViewerWidget::keyPressEvent(QKeyEvent* event)
 
 void ViewerWidget::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::RightButton)
+    if (event->button() == Qt::LeftButton)   // left click for rotating
+    {
+        startPos = event->pos();
+        rotateMode = true;
+    }
+    else if (event->button() == Qt::RightButton) // right click for zooming
     {
         startPos = event->pos();
         zoomMode = true;
     }
-    else if (event->button() == Qt::LeftButton)
+    else if (event->button() == Qt::MidButton) // middle click for moving
     {
         startPos = event->pos();
         moveMode = true;
@@ -283,12 +290,17 @@ void ViewerWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewerWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    if (event->buttons() && Qt::RightButton && zoomMode)
+    if (event->button() && Qt::LeftButton && rotateMode)
+    {
+        rotate(event->pos());
+        startPos = event->pos();
+    }
+    else if (event->buttons() && Qt::RightButton && zoomMode)
     {
         zoom(event->pos());
         startPos = event->pos();
     }
-    else if (event->buttons() && Qt::LeftButton && moveMode)
+    else if (event->buttons() && Qt::MidButton && moveMode)
     {
         moveTo(event->pos());
         startPos = event->pos();
@@ -297,16 +309,38 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent* event)
 
 void ViewerWidget::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::RightButton && zoomMode)
+    if (event->button() == Qt::LeftButton && rotateMode)
+    {
+        rotate(event->pos());
+        rotateMode = false;
+    }
+    else if (event->button() == Qt::RightButton && zoomMode)
     {
         zoom(event->pos());
         zoomMode = false;
     }
-    else if (event->button() == Qt::LeftButton && moveMode)
+    else if (event->button() == Qt::MidButton && moveMode)
     {
         moveTo(event->pos());
         moveMode = false;
     }
+}
+
+void ViewerWidget::rotate(QPoint curPos)
+{
+    QPoint rotateVector = curPos-startPos;
+    cout << "DebugPt: rotateVector=(" << rotateVector.x() << ", " << rotateVector.y() << ")\n";
+    float curRotAngle = 360.0f * sqrt((double)(rotateVector.x()*rotateVector.x()+rotateVector.y()*rotateVector.y()) / (QWidget::width()*QWidget::width()+QWidget::height()*QWidget::height()));
+    QQuaternion curQ = QQuaternion::fromAxisAndAngle(rotateVector.x(), rotateVector.y(), 0.0f, curRotAngle);
+    quaternion *= curQ;
+    //quaternion.getAxisAndAngle(&rotX, &rotY, &rotZ, &rotAngle);
+    QVector4D curRotation = quaternion.toVector4D();
+    rotX = curRotation.x()/curRotation.w();
+    rotY = curRotation.y()/curRotation.w();
+    rotZ = curRotation.z()/curRotation.w();
+    rotAngle = curRotation.w();
+
+    update();
 }
 
 void ViewerWidget::zoom(QPoint curPos)
@@ -327,7 +361,7 @@ void ViewerWidget::zoom(QPoint curPos)
         left = -right;
         bottom = -top;
     }
-    else
+    else    // zoom in beyond nearVal plane (nearVal shouldn't be <1.0f for over-distorted frustum)
         overZoom += zoomAmt;
 
     update();
@@ -335,9 +369,9 @@ void ViewerWidget::zoom(QPoint curPos)
 
 void ViewerWidget::moveTo(QPoint curPos)
 {
-    QPoint moveFactor = (curPos-startPos); // + move to right/bottom, - move to left/top
+    QPoint moveFactor = curPos-startPos; // + move to right/bottom, - move to left/top
 
-    float overZoomFactor = max(1.0f, 1.0f+overZoom/(float)nearVal);
+    float overZoomFactor = max(1.0f, 1.0f+overZoom/(float)nearVal); // handle overzoom condition beyond nearVal plane
     moveX += overZoomFactor*((right-left) * moveFactor.x() / QWidget::width());
     moveY -= overZoomFactor*((top-bottom) * moveFactor.y() / QWidget::height());
 
